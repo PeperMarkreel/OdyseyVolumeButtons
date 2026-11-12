@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Drawing;
+using System.Diagnostics;
 using System.IO;
 using System.Management;
 using System.Runtime.InteropServices;
@@ -118,55 +119,96 @@ internal sealed class VolumeTray : ApplicationContext
         }
     }
 
+    private const int FirstRepeatDelayMs = 400;
+    private const int RepeatIntervalMs = 110;
+
     private void ReadButtons(FileStream input)
     {
         var report = new byte[2];
-        byte previous = 0;
-        while (true)
+        Task<int> pendingRead = null;
+        byte heldButton = 0;
+        var clock = Stopwatch.StartNew();
+        long repeatAt = 0;
+
+        while (!stopping)
         {
-            Task<int> pendingRead;
-            lock (inputLock)
+            if (pendingRead == null)
+            {
+                lock (inputLock)
+                {
+                    if (stopping)
+                        break;
+                    pendingRead = input.ReadAsync(report, 0, report.Length);
+                }
+            }
+
+            int waitMs = heldButton == 0 ? Timeout.Infinite :
+                (int)Math.Max(0, repeatAt - clock.ElapsedMilliseconds);
+            if (!WaitForReport(pendingRead, waitMs) && !pendingRead.IsCompleted)
             {
                 if (stopping)
                     break;
-                pendingRead = input.ReadAsync(report, 0, report.Length);
+                AdjustVolume(heldButton);
+                repeatAt = clock.ElapsedMilliseconds + RepeatIntervalMs;
+                continue;
             }
 
             if (pendingRead.GetAwaiter().GetResult() != report.Length || stopping)
                 break;
+            pendingRead = null;
+
             if (report[0] != 1)
                 continue;
 
-            byte button = report[1];
-            bool newPress = button != previous;
-            previous = button;
-            if (!newPress || (button != 1 && button != 2))
+            byte button = report[1] == 1 || report[1] == 2 ? report[1] : (byte)0;
+            if (button == heldButton)
                 continue;
 
-            try
+            heldButton = button;
+            if (heldButton != 0)
             {
-                float level = Headset.WithVolume(volume =>
-                {
-                    if (button == 1)
-                        volume.VolumeStepUp(IntPtr.Zero);
-                    else
-                        volume.VolumeStepDown(IntPtr.Zero);
-
-                    return volume.GetMasterVolumeLevelScalar();
-                });
-                status = "Windows-volume " + level.ToString("P0");
-                if (tracePath != null)
-                    File.AppendAllText(tracePath, DateTime.Now.ToString("HH:mm:ss.fff") + " " +
-                        (button == 1 ? "+" : "-") + " " + status + Environment.NewLine);
-            }
-            catch (Exception error) when (error is COMException || error is IOException)
-            {
-                status = error.Message;
+                repeatAt = clock.ElapsedMilliseconds + FirstRepeatDelayMs;
+                AdjustVolume(heldButton);
             }
         }
 
         if (!stopping)
             status = "Wachten op Odyssey+";
+    }
+
+    private static bool WaitForReport(Task<int> pendingRead, int waitMs)
+    {
+        try { return pendingRead.Wait(waitMs); }
+        catch (AggregateException)
+        {
+            // Propagate the underlying I/O or cancellation error through the listener's normal path.
+            pendingRead.GetAwaiter().GetResult();
+            throw;
+        }
+    }
+
+    private void AdjustVolume(byte button)
+    {
+        try
+        {
+            float level = Headset.WithVolume(volume =>
+            {
+                if (button == 1)
+                    volume.VolumeStepUp(IntPtr.Zero);
+                else
+                    volume.VolumeStepDown(IntPtr.Zero);
+
+                return volume.GetMasterVolumeLevelScalar();
+            });
+            status = "Windows-volume " + level.ToString("P0");
+            if (tracePath != null)
+                File.AppendAllText(tracePath, DateTime.Now.ToString("HH:mm:ss.fff") + " " +
+                    (button == 1 ? "+" : "-") + " " + status + Environment.NewLine);
+        }
+        catch (Exception error) when (error is COMException || error is IOException)
+        {
+            status = error.Message;
+        }
     }
 
     private void StopListener()
