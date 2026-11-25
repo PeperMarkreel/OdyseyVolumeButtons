@@ -12,7 +12,7 @@ If your headset works in SteamVR but pressing its volume buttons does nothing, t
 
 ## Run the app
 
-1. Extract `OdysseyVolume.exe` if you have the ZIP, or [build it from source](#build-from-source).
+1. [Download the Windows ZIP](https://github.com/PeperMarkreel/OdyseyVolumeButtons/releases/latest) and extract `OdysseyVolume.exe`, or [build it from source](#build-from-source).
 2. Put the executable in a folder where you plan to keep it, then double-click it.
 3. Connect the headset and try its volume buttons. Right-click the speaker icon in the Windows notification area to see the connection or volume status. If the icon is hidden, look under the notification area's up arrow.
 
