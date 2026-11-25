@@ -14,14 +14,32 @@ internal static class SteamVrStartup
     private const int NoManifest = 101;
     private const int InvalidManifest = 107;
 
-    public static void SetEnabled(string executable, bool enabled)
+    private static string ManifestPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "OdysseyVolume", "OdysseyVolume.vrmanifest");
+
+    public static bool HasManifest => File.Exists(ManifestPath);
+
+    public static bool IsEnabled()
     {
-        string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "OdysseyVolume");
-        SetRegistration(executable, Path.Combine(folder, "OdysseyVolume.vrmanifest"), enabled);
+        // With no app manifest there is no need to start the OpenVR utility runtime.
+        return HasManifest && WithApplications(applications =>
+        {
+            byte[] key = Utf8(AppKey);
+            return Slot<TestFlag>(applications, 2)(key) && Slot<TestFlag>(applications, 18)(key);
+        });
     }
 
-    private static void SetRegistration(string executable, string manifestPath, bool enabled)
+    public static void SetEnabled(string executable, bool enabled)
+    {
+        WithApplications(applications =>
+        {
+            UpdateManifest(applications, executable, ManifestPath, enabled);
+            return true;
+        });
+    }
+
+    private static T WithApplications<T>(Func<IntPtr, T> action)
     {
         const uint searchDllDirectory = 0x00000100;
         const uint searchSystem32 = 0x00000800;
@@ -43,7 +61,7 @@ internal static class SteamVrStartup
                 if (applications == IntPtr.Zero)
                     throw new InvalidOperationException("The SteamVR applications interface is unavailable.");
 
-                UpdateManifest(applications, executable, manifestPath, enabled);
+                return action(applications);
             }
             finally
             {

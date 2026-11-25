@@ -1,5 +1,7 @@
 # Odyssey+ Volume Buttons
 
+<img src="assets/odyssey-plus.png" alt="Illustration of a Samsung Odyssey+ VR headset" width="210">
+
 Use the physical volume buttons on a Samsung Odyssey+ to control Windows audio.
 
 This app grew out of a Samsung Odyssey+ setup running SteamVR with the Oasis driver. In that setup, pressing the headset's physical volume buttons had no effect on Windows audio. The tray app reads those buttons directly from the headset and adjusts the default Windows multimedia output, so you can change the volume from the headset during a VR session. Hold a button to keep adjusting the volume.
@@ -14,24 +16,23 @@ This app grew out of a Samsung Odyssey+ setup running SteamVR with the Oasis dri
 
 1. [Download the Windows ZIP](https://github.com/PeperMarkreel/OdyseyVolumeButtons/releases/latest) and extract `OdysseyVolume.exe`, or [build it from source](#build-from-source).
 2. Put the executable in a folder where you plan to keep it, then double-click it.
-3. Connect the headset and try its volume buttons. Right-click the speaker icon in the Windows notification area to see the connection or volume status. If the icon is hidden, look under the notification area's up arrow.
+3. Choose a startup mode on the first launch. Connect the headset and try its volume buttons once the app is running. Right-click the speaker icon in the Windows notification area to see the connection or volume status. If the icon is hidden, look under the notification area's up arrow.
 
 The app runs as your Windows user and works without an installer or administrator rights.
 
 ## Start automatically
 
-Both options are off by default.
+On the first launch, choose when to run the app. To change your choice later, right-click the tray icon and select **Startup options…**. The window shows your current startup settings.
 
-| Tray menu | What happens |
+| Startup option | What happens |
 | --- | --- |
-| **Start at Windows sign-in** | Runs at Windows sign-in and stays available until you close it. |
-| **Start with SteamVR → Enable** | Lets SteamVR start the app. That instance exits when SteamVR shuts down. |
-| **Start with SteamVR → Disable** | Removes the SteamVR autostart registration. |
-| **Exit** | Closes the running app. |
+| **Start and stop with SteamVR** | Starts the next time SteamVR opens. A SteamVR-started instance exits when SteamVR shuts down. |
+| **Start on user logon** | Starts now and at future Windows sign-ins. |
+| **Just run once (this session)** | Runs for the current session and leaves both autostart settings off. You can still open the app manually. |
 
-For volume controls only during VR sessions, enable SteamVR autostart and leave Windows sign-in unchecked. If the app is already running, a second launch keeps the existing instance. An instance opened manually or at Windows sign-in stays open when SteamVR closes.
+Existing autostart settings carry over when you upgrade. If the app is already running, a second launch keeps the existing instance. An instance opened manually or at Windows sign-in stays open when SteamVR closes.
 
-If you move the executable, turn each enabled autostart option off and on from its new location to update the saved path. To uninstall, turn off both autostart options, choose **Exit**, then delete the executable.
+If you move the executable, save **Just run once (this session)** and then reselect your autostart option from the new location to update the saved path. To uninstall, save **Just run once (this session)**, choose **Exit** from the tray menu, then delete the executable.
 
 ## Build from source
 

@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -40,8 +39,19 @@ internal static class Program
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             using (var steamVr = SteamVrSession.FindLauncher())
-            using (var app = new VolumeTray(args.Length == 2 && args[0] == "--trace" ? args[1] : null, steamVr))
-                Application.Run(app);
+            {
+                if (steamVr == null && StartupSetup.NeedsFirstRun())
+                {
+                    using (var setup = new StartupSetup(firstRun: true))
+                    {
+                        if (setup.ShowDialog() != DialogResult.OK || setup.SteamVrOnly)
+                            return 0;
+                    }
+                }
+
+                using (var app = new VolumeTray(args.Length == 2 && args[0] == "--trace" ? args[1] : null, steamVr))
+                    Application.Run(app);
+            }
         }
         return 0;
     }
@@ -53,12 +63,11 @@ internal sealed class VolumeTray : ApplicationContext
     private readonly NotifyIcon icon;
     private readonly Icon trayImage;
     private readonly ToolStripMenuItem statusItem;
-    private readonly ToolStripMenuItem windowsStartupItem;
-    private readonly ToolStripMenuItem steamVrStartupItem;
     private readonly object inputLock = new object();
     private readonly ManualResetEvent shutdown = new ManualResetEvent(false);
     private readonly Thread listener;
     private readonly System.Windows.Forms.Timer steamVrExitTimer;
+    private StartupSetup startupOptions;
     private SafeFileHandle activeInput;
     private volatile string status = "Waiting for Odyssey+";
     private volatile bool stopping;
@@ -70,32 +79,19 @@ internal sealed class VolumeTray : ApplicationContext
     {
         this.tracePath = tracePath;
         statusItem = new ToolStripMenuItem(status) { Enabled = false };
-        windowsStartupItem = new ToolStripMenuItem("Start at Windows sign-in", null, ToggleWindowsStartup);
-        steamVrStartupItem = new ToolStripMenuItem("Start with SteamVR");
-        steamVrStartupItem.DropDownItems.Add("Enable", null, async (sender, args) => await SetSteamVrStartup(true));
-        steamVrStartupItem.DropDownItems.Add("Disable", null, async (sender, args) => await SetSteamVrStartup(false));
-
         var menu = new ContextMenuStrip();
-        menu.Opening += (sender, args) =>
-        {
-            statusItem.Text = status;
-            try
-            {
-                windowsStartupItem.Checked = WindowsStartup.IsEnabled();
-                windowsStartupItem.Enabled = true;
-                windowsStartupItem.ToolTipText = "";
-            }
-            catch (Exception error) when (IsStartupError(error))
-            {
-                windowsStartupItem.Checked = false;
-                windowsStartupItem.Enabled = false;
-                windowsStartupItem.ToolTipText = error.Message;
-            }
-        };
+        menu.Opening += (sender, args) => statusItem.Text = status;
         menu.Items.Add(statusItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(windowsStartupItem);
-        menu.Items.Add(steamVrStartupItem);
+        menu.Items.Add("Startup options…", null, (sender, args) =>
+        {
+            using (var setup = new StartupSetup(firstRun: false))
+            {
+                startupOptions = setup;
+                try { setup.ShowDialog(); }
+                finally { startupOptions = null; }
+            }
+        });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (sender, args) => ExitThread());
         trayImage = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
@@ -114,55 +110,14 @@ internal sealed class VolumeTray : ApplicationContext
             steamVrExitTimer = new System.Windows.Forms.Timer { Interval = 250 };
             steamVrExitTimer.Tick += (sender, args) =>
             {
-                if (steamVr.HasExited)
+                if (!steamVr.HasExited)
+                    return;
+                startupOptions?.Close();
+                if (startupOptions?.Visible != true)
                     ExitThread();
             };
             steamVrExitTimer.Start();
         }
-    }
-
-    private void ToggleWindowsStartup(object sender, EventArgs args)
-    {
-        try
-        {
-            bool enable = !WindowsStartup.IsEnabled();
-            WindowsStartup.SetEnabled(enable);
-            windowsStartupItem.Checked = enable;
-        }
-        catch (Exception error) when (IsStartupError(error))
-        {
-            MessageBox.Show("Could not change Windows autostart.\n\n" + error.Message,
-                AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
-    }
-
-    private async Task SetSteamVrStartup(bool enabled)
-    {
-        steamVrStartupItem.Enabled = false;
-        try
-        {
-            await Task.Run(() => SteamVrStartup.SetEnabled(Application.ExecutablePath, enabled));
-            if (!disposed)
-                icon.ShowBalloonTip(3000, AppName, enabled ? "SteamVR autostart enabled." :
-                    "SteamVR autostart disabled.", ToolTipIcon.Info);
-        }
-        catch (Exception error) when (IsStartupError(error))
-        {
-            if (!disposed)
-                MessageBox.Show("Could not change SteamVR autostart.\n\n" + error.Message,
-                    AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-        }
-        finally
-        {
-            if (!disposed)
-                steamVrStartupItem.Enabled = true;
-        }
-    }
-
-    private static bool IsStartupError(Exception error)
-    {
-        return error is IOException || error is Win32Exception || error is UnauthorizedAccessException ||
-            error is SecurityException || error is InvalidOperationException || error is ArgumentException;
     }
 
     private void Listen()

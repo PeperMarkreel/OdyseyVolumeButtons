@@ -11,7 +11,8 @@ $references = 'mscorlib','System','System.Core','System.Drawing','System.Windows
 $output = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $root 'outputs' }
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 $icon = Join-Path $PSScriptRoot 'OdysseyVolume.ico'
-$sources = 'OdysseyVolume.cs','SteamVrStartup.cs','SteamVrSession.cs' | ForEach-Object { Join-Path $PSScriptRoot $_ }
-dotnet exec $compiler /nologo /noconfig /nostdlib /target:winexe /optimize+ $references "/win32icon:$icon" "/out:$output\OdysseyVolume.exe" $sources
+$headset = Join-Path $root 'assets\odyssey-plus.png'
+$sources = 'OdysseyVolume.cs','SteamVrStartup.cs','SteamVrSession.cs','StartupSetup.cs' | ForEach-Object { Join-Path $PSScriptRoot $_ }
+dotnet exec $compiler /nologo /noconfig /nostdlib /target:winexe /optimize+ $references "/win32icon:$icon" "/resource:$headset,OdysseyHeadset.png" "/out:$output\OdysseyVolume.exe" $sources
 if ($LASTEXITCODE -ne 0) { throw 'Failed to build OdysseyVolume.exe.' }
 
