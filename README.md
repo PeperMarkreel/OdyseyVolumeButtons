@@ -2,13 +2,13 @@
 
 Use the physical volume buttons on a Samsung Odyssey+ to control Windows audio.
 
-If your headset works in SteamVR but pressing its volume buttons does nothing, this small Windows tray app restores those controls. It reads the buttons directly from the headset and raises or lowers the volume of the default Windows multimedia output. Hold a button to keep adjusting the volume.
+This app grew out of a Samsung Odyssey+ setup running SteamVR with the Oasis driver. In that setup, pressing the headset's physical volume buttons had no effect on Windows audio. The tray app reads those buttons directly from the headset and adjusts the default Windows multimedia output, so you can change the volume from the headset during a VR session. Hold a button to keep adjusting the volume.
 
 ## Compatibility
 
 - The app targets the USB interface of the **Samsung Odyssey+**.
-- Tested on **64-bit Windows 11, version 25H2**.
-- **SteamVR** is optional for volume control. Your VR setup still uses its own headset driver. [Oasis Driver for Windows Mixed Reality](https://store.steampowered.com/app/3824490/Oasis_Driver_for_Windows_Mixed_Reality/)
+- Tested on **64-bit Windows 11, version 25H2**, with a Samsung Odyssey+ using Oasis and SteamVR. [Oasis Driver for Windows Mixed Reality](https://store.steampowered.com/app/3824490/Oasis_Driver_for_Windows_Mixed_Reality/)
+- **SteamVR** is optional for volume control.
 
 ## Run the app
 
