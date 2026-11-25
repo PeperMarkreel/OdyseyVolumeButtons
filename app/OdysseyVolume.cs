@@ -3,11 +3,12 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Diagnostics;
 using System.IO;
-using System.Management;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 
 internal static class Program
@@ -38,7 +39,8 @@ internal static class Program
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            using (var app = new VolumeTray(args.Length == 2 && args[0] == "--trace" ? args[1] : null))
+            using (var steamVr = SteamVrSession.FindLauncher())
+            using (var app = new VolumeTray(args.Length == 2 && args[0] == "--trace" ? args[1] : null, steamVr))
                 Application.Run(app);
         }
         return 0;
@@ -47,11 +49,16 @@ internal static class Program
 
 internal sealed class VolumeTray : ApplicationContext
 {
+    private const string AppName = "Odyssey+ volumeknoppen";
     private readonly NotifyIcon icon;
+    private readonly Icon trayImage;
     private readonly ToolStripMenuItem statusItem;
+    private readonly ToolStripMenuItem windowsStartupItem;
+    private readonly ToolStripMenuItem steamVrStartupItem;
     private readonly object inputLock = new object();
     private readonly ManualResetEvent shutdown = new ManualResetEvent(false);
     private readonly Thread listener;
+    private readonly System.Windows.Forms.Timer steamVrExitTimer;
     private SafeFileHandle activeInput;
     private volatile string status = "Wachten op Odyssey+";
     private volatile bool stopping;
@@ -59,24 +66,103 @@ internal sealed class VolumeTray : ApplicationContext
 
     private readonly string tracePath;
 
-    public VolumeTray(string tracePath)
+    public VolumeTray(string tracePath, Process steamVr)
     {
         this.tracePath = tracePath;
         statusItem = new ToolStripMenuItem(status) { Enabled = false };
+        windowsStartupItem = new ToolStripMenuItem("Starten bij Windows-aanmelding", null, ToggleWindowsStartup);
+        steamVrStartupItem = new ToolStripMenuItem("Starten met SteamVR");
+        steamVrStartupItem.DropDownItems.Add("Inschakelen", null, async (sender, args) => await SetSteamVrStartup(true));
+        steamVrStartupItem.DropDownItems.Add("Uitschakelen", null, async (sender, args) => await SetSteamVrStartup(false));
+
         var menu = new ContextMenuStrip();
-        menu.Opening += (sender, args) => statusItem.Text = status;
+        menu.Opening += (sender, args) =>
+        {
+            statusItem.Text = status;
+            try
+            {
+                windowsStartupItem.Checked = WindowsStartup.IsEnabled();
+                windowsStartupItem.Enabled = true;
+                windowsStartupItem.ToolTipText = "";
+            }
+            catch (Exception error) when (IsStartupError(error))
+            {
+                windowsStartupItem.Checked = false;
+                windowsStartupItem.Enabled = false;
+                windowsStartupItem.ToolTipText = error.Message;
+            }
+        };
         menu.Items.Add(statusItem);
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(windowsStartupItem);
+        menu.Items.Add(steamVrStartupItem);
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Afsluiten", null, (sender, args) => ExitThread());
+        trayImage = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         icon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
-            Text = "Odyssey+ volumeknoppen",
+            Icon = trayImage,
+            Text = AppName,
             ContextMenuStrip = menu,
             Visible = true
         };
         listener = new Thread(Listen) { IsBackground = true, Name = "Odyssey+ HID" };
         listener.Start();
+
+        if (steamVr != null)
+        {
+            steamVrExitTimer = new System.Windows.Forms.Timer { Interval = 250 };
+            steamVrExitTimer.Tick += (sender, args) =>
+            {
+                if (steamVr.HasExited)
+                    ExitThread();
+            };
+            steamVrExitTimer.Start();
+        }
+    }
+
+    private void ToggleWindowsStartup(object sender, EventArgs args)
+    {
+        try
+        {
+            bool enable = !WindowsStartup.IsEnabled();
+            WindowsStartup.SetEnabled(enable);
+            windowsStartupItem.Checked = enable;
+        }
+        catch (Exception error) when (IsStartupError(error))
+        {
+            MessageBox.Show("Windows-autostart kon niet worden gewijzigd.\n\n" + error.Message,
+                AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    private async Task SetSteamVrStartup(bool enabled)
+    {
+        steamVrStartupItem.Enabled = false;
+        try
+        {
+            await Task.Run(() => SteamVrStartup.SetEnabled(Application.ExecutablePath, enabled));
+            if (!disposed)
+                icon.ShowBalloonTip(3000, AppName, enabled ? "SteamVR-autostart ingeschakeld." :
+                    "SteamVR-autostart uitgeschakeld.", ToolTipIcon.Info);
+        }
+        catch (Exception error) when (IsStartupError(error))
+        {
+            if (!disposed)
+                MessageBox.Show("SteamVR-autostart kon niet worden gewijzigd.\n\n" + error.Message,
+                    AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        finally
+        {
+            if (!disposed)
+                steamVrStartupItem.Enabled = true;
+        }
+    }
+
+    private static bool IsStartupError(Exception error)
+    {
+        return error is IOException || error is Win32Exception || error is UnauthorizedAccessException ||
+            error is SecurityException || error is InvalidOperationException || error is ArgumentException;
     }
 
     private void Listen()
@@ -226,6 +312,7 @@ internal sealed class VolumeTray : ApplicationContext
 
     protected override void ExitThreadCore()
     {
+        steamVrExitTimer?.Stop();
         StopListener();
         icon.Visible = false;
         base.ExitThreadCore();
@@ -236,14 +323,46 @@ internal sealed class VolumeTray : ApplicationContext
         if (disposing && !disposed)
         {
             disposed = true;
+            steamVrExitTimer?.Dispose();
             StopListener();
             if (listener.Join(1000))
                 shutdown.Dispose();
             var menu = icon.ContextMenuStrip;
             icon.Dispose();
             menu.Dispose();
+            trayImage.Dispose();
         }
         base.Dispose(disposing);
+    }
+}
+
+internal static class WindowsStartup
+{
+    private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string ValueName = "OdysseyVolume";
+
+    public static bool IsEnabled()
+    {
+        using (var key = Registry.CurrentUser.OpenSubKey(RunKey))
+            return key?.GetValue(ValueName) != null;
+    }
+
+    public static void SetEnabled(bool enabled)
+    {
+        if (enabled)
+        {
+            string command = "\"" + Application.ExecutablePath + "\"";
+            if (command.Length > 260)
+                throw new IOException("Verplaats OdysseyVolume.exe naar een korter pad en probeer het opnieuw.");
+
+            using (var key = Registry.CurrentUser.CreateSubKey(RunKey))
+                key.SetValue(ValueName, command, RegistryValueKind.String);
+        }
+        else
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true))
+                key?.DeleteValue(ValueName, throwOnMissingValue: false);
+        }
     }
 }
 
