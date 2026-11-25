@@ -1,4 +1,4 @@
-# Odyssey+ Volume Buttons
+# Odyssey+ Volume Buttons With Oasis Driver
 
 <img src="assets/odyssey-plus.png" alt="Illustration of a Samsung Odyssey+ VR headset" width="210">
 
