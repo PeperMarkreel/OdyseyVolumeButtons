@@ -1,8 +1,8 @@
 # Odyssey+ Volume Buttons
 
-Use the physical volume buttons on a Samsung Odyssey+ to control Windows audio, even when SteamVR is closed.
+Use the physical volume buttons on a Samsung Odyssey+ to control Windows audio.
 
-If pressing your headset's volume buttons does nothing, this small Windows tray app restores those controls. It reads the buttons directly from the headset and raises or lowers the volume of the default Windows multimedia output. Hold a button to keep adjusting the volume.
+If your headset works in SteamVR but pressing its volume buttons does nothing, this small Windows tray app restores those controls. It reads the buttons directly from the headset and raises or lowers the volume of the default Windows multimedia output. Hold a button to keep adjusting the volume.
 
 ## Compatibility
 
