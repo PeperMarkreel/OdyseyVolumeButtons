@@ -21,7 +21,7 @@ internal static class Program
             try
             {
                 using (Headset.OpenButtons())
-                    File.WriteAllText(args[1], "Knoppen bereikbaar. Windows-volume: " +
+                    File.WriteAllText(args[1], "Headset buttons available. Windows volume: " +
                         Headset.WithVolume(volume => volume.GetMasterVolumeLevelScalar()).ToString("P0"));
                 return 0;
             }
@@ -49,7 +49,7 @@ internal static class Program
 
 internal sealed class VolumeTray : ApplicationContext
 {
-    private const string AppName = "Odyssey+ volumeknoppen";
+    private const string AppName = "Odyssey+ Volume Buttons";
     private readonly NotifyIcon icon;
     private readonly Icon trayImage;
     private readonly ToolStripMenuItem statusItem;
@@ -60,7 +60,7 @@ internal sealed class VolumeTray : ApplicationContext
     private readonly Thread listener;
     private readonly System.Windows.Forms.Timer steamVrExitTimer;
     private SafeFileHandle activeInput;
-    private volatile string status = "Wachten op Odyssey+";
+    private volatile string status = "Waiting for Odyssey+";
     private volatile bool stopping;
     private bool disposed;
 
@@ -70,10 +70,10 @@ internal sealed class VolumeTray : ApplicationContext
     {
         this.tracePath = tracePath;
         statusItem = new ToolStripMenuItem(status) { Enabled = false };
-        windowsStartupItem = new ToolStripMenuItem("Starten bij Windows-aanmelding", null, ToggleWindowsStartup);
-        steamVrStartupItem = new ToolStripMenuItem("Starten met SteamVR");
-        steamVrStartupItem.DropDownItems.Add("Inschakelen", null, async (sender, args) => await SetSteamVrStartup(true));
-        steamVrStartupItem.DropDownItems.Add("Uitschakelen", null, async (sender, args) => await SetSteamVrStartup(false));
+        windowsStartupItem = new ToolStripMenuItem("Start at Windows sign-in", null, ToggleWindowsStartup);
+        steamVrStartupItem = new ToolStripMenuItem("Start with SteamVR");
+        steamVrStartupItem.DropDownItems.Add("Enable", null, async (sender, args) => await SetSteamVrStartup(true));
+        steamVrStartupItem.DropDownItems.Add("Disable", null, async (sender, args) => await SetSteamVrStartup(false));
 
         var menu = new ContextMenuStrip();
         menu.Opening += (sender, args) =>
@@ -97,7 +97,7 @@ internal sealed class VolumeTray : ApplicationContext
         menu.Items.Add(windowsStartupItem);
         menu.Items.Add(steamVrStartupItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Afsluiten", null, (sender, args) => ExitThread());
+        menu.Items.Add("Exit", null, (sender, args) => ExitThread());
         trayImage = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         icon = new NotifyIcon
         {
@@ -131,7 +131,7 @@ internal sealed class VolumeTray : ApplicationContext
         }
         catch (Exception error) when (IsStartupError(error))
         {
-            MessageBox.Show("Windows-autostart kon niet worden gewijzigd.\n\n" + error.Message,
+            MessageBox.Show("Could not change Windows autostart.\n\n" + error.Message,
                 AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
@@ -143,13 +143,13 @@ internal sealed class VolumeTray : ApplicationContext
         {
             await Task.Run(() => SteamVrStartup.SetEnabled(Application.ExecutablePath, enabled));
             if (!disposed)
-                icon.ShowBalloonTip(3000, AppName, enabled ? "SteamVR-autostart ingeschakeld." :
-                    "SteamVR-autostart uitgeschakeld.", ToolTipIcon.Info);
+                icon.ShowBalloonTip(3000, AppName, enabled ? "SteamVR autostart enabled." :
+                    "SteamVR autostart disabled.", ToolTipIcon.Info);
         }
         catch (Exception error) when (IsStartupError(error))
         {
             if (!disposed)
-                MessageBox.Show("SteamVR-autostart kon niet worden gewijzigd.\n\n" + error.Message,
+                MessageBox.Show("Could not change SteamVR autostart.\n\n" + error.Message,
                     AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
         finally
@@ -181,7 +181,7 @@ internal sealed class VolumeTray : ApplicationContext
                     }
                     try
                     {
-                        status = "Odyssey+ verbonden";
+                        status = "Odyssey+ connected";
                         ReadButtons(input);
                     }
                     finally
@@ -259,7 +259,7 @@ internal sealed class VolumeTray : ApplicationContext
         }
 
         if (!stopping)
-            status = "Wachten op Odyssey+";
+            status = "Waiting for Odyssey+";
     }
 
     private static bool WaitForReport(Task<int> pendingRead, int waitMs)
@@ -286,7 +286,7 @@ internal sealed class VolumeTray : ApplicationContext
 
                 return volume.GetMasterVolumeLevelScalar();
             });
-            status = "Windows-volume " + level.ToString("P0");
+            status = "Windows volume " + level.ToString("P0");
             if (tracePath != null)
                 File.AppendAllText(tracePath, DateTime.Now.ToString("HH:mm:ss.fff") + " " +
                     (button == 1 ? "+" : "-") + " " + status + Environment.NewLine);
@@ -353,7 +353,7 @@ internal static class WindowsStartup
         {
             string command = "\"" + Application.ExecutablePath + "\"";
             if (command.Length > 260)
-                throw new IOException("Verplaats OdysseyVolume.exe naar een korter pad en probeer het opnieuw.");
+                throw new IOException("Move OdysseyVolume.exe to a shorter path and try again.");
 
             using (var key = Registry.CurrentUser.CreateSubKey(RunKey))
                 key.SetValue(ValueName, command, RegistryValueKind.String);
@@ -377,12 +377,12 @@ internal static class Headset
         Guid interfaceClass = HidInterfaceClass;
         uint result = CM_Get_Device_Interface_List_Size(out uint length, ref interfaceClass, IntPtr.Zero, 0);
         if (result != 0)
-            throw new IOException("Windows kan de HID-apparaten niet opvragen (" + result + ")");
+            throw new IOException("Windows could not list HID devices (" + result + ")");
 
         var paths = new char[length];
         result = CM_Get_Device_Interface_List(ref interfaceClass, IntPtr.Zero, paths, length, 0);
         if (result != 0)
-            throw new IOException("De HID-apparatenlijst is gewijzigd (" + result + ")");
+            throw new IOException("The HID device list changed (" + result + ")");
 
         foreach (string path in new string(paths).Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries))
         {
@@ -404,7 +404,7 @@ internal static class Headset
             }
         }
 
-        throw new IOException("Wachten op Odyssey+");
+        throw new IOException("Waiting for Odyssey+");
     }
 
     public static void CancelRead(SafeFileHandle handle)

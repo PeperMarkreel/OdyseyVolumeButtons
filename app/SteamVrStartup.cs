@@ -35,13 +35,13 @@ internal static class SteamVrStartup
             var shutdown = Export<Shutdown>(library, "VR_ShutdownInternal");
             var getInterface = Export<GetInterface>(library, "VR_GetGenericInterface");
             init(out int error, UtilityApplication);
-            CheckResult(error, "verbinding maken");
+            CheckResult(error, "connect");
             try
             {
                 IntPtr applications = getInterface(ApplicationsInterface, out error);
-                CheckResult(error, "de toepassingsinterface openen");
+                CheckResult(error, "open the applications interface");
                 if (applications == IntPtr.Zero)
-                    throw new InvalidOperationException("De toepassingsinterface van SteamVR is niet beschikbaar.");
+                    throw new InvalidOperationException("The SteamVR applications interface is unavailable.");
 
                 UpdateManifest(applications, executable, manifestPath, enabled);
             }
@@ -69,7 +69,7 @@ internal static class SteamVrStartup
         if (!enabled)
         {
             if (isInstalled(key))
-                CheckResult(setAutoLaunch(key, false), "autostart uitschakelen");
+                CheckResult(setAutoLaunch(key, false), "disable autostart");
             RemoveManifest(removeManifest, path);
             if (File.Exists(manifestPath))
                 File.Delete(manifestPath);
@@ -89,7 +89,6 @@ internal static class SteamVrStartup
                     strings = new
                     {
                         en_us = new { name = "Odyssey+ Volume Buttons" },
-                        nl_nl = new { name = "Odyssey+ volumeknoppen" },
                     },
                 },
             },
@@ -104,8 +103,8 @@ internal static class SteamVrStartup
             File.WriteAllText(manifestPath, manifest);
         }
 
-        CheckResult(addManifest(path, false), "de app registreren");
-        CheckResult(setAutoLaunch(key, true), "autostart inschakelen");
+        CheckResult(addManifest(path, false), "register the app");
+        CheckResult(setAutoLaunch(key, true), "enable autostart");
     }
 
     private static void RemoveManifest(PathOperation removeManifest, byte[] path)
@@ -113,7 +112,7 @@ internal static class SteamVrStartup
         int error = removeManifest(path);
         // SteamVR returns InvalidManifest when the path has not been registered.
         if (error != NoManifest && error != InvalidManifest)
-            CheckResult(error, "de app afmelden");
+            CheckResult(error, "unregister the app");
     }
 
     private static string FindOpenVrLibrary()
@@ -134,7 +133,7 @@ internal static class SteamVrStartup
                     return library;
             }
         }
-        throw new InvalidOperationException("Installeer SteamVR via Steam en probeer het opnieuw.");
+        throw new InvalidOperationException("Install SteamVR through Steam and try again.");
     }
 
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value + "\0");
@@ -142,7 +141,7 @@ internal static class SteamVrStartup
     private static void CheckResult(int error, string action)
     {
         if (error != 0)
-            throw new InvalidOperationException("SteamVR kon " + action + " niet voltooien (fout " + error + ").");
+            throw new InvalidOperationException("SteamVR could not " + action + " (error " + error + ").");
     }
 
     private static T Export<T>(IntPtr library, string name) where T : Delegate

@@ -1,8 +1,8 @@
 # Odyssey+ Volume Buttons
 
-Use the physical volume buttons on a Samsung Odyssey+ to control Windows audio.
+Use the physical volume buttons on a Samsung Odyssey+ to control Windows audio, even when SteamVR is closed.
 
-If your headset works in SteamVR but pressing its volume buttons does nothing, this small Windows tray app restores those controls. It reads the buttons directly from the headset and raises or lowers the volume of the default Windows multimedia output. Hold a button to keep adjusting the volume.
+If pressing your headset's volume buttons does nothing, this small Windows tray app restores those controls. It reads the buttons directly from the headset and raises or lowers the volume of the default Windows multimedia output. Hold a button to keep adjusting the volume.
 
 ## Compatibility
 
@@ -20,18 +20,18 @@ The app runs as your Windows user and works without an installer or administrato
 
 ## Start automatically
 
-Both options are off by default. The tray menu currently uses Dutch labels.
+Both options are off by default.
 
 | Tray menu | What happens |
 | --- | --- |
-| **Starten bij Windows-aanmelding** | Runs at Windows sign-in and stays available until you close it. |
-| **Starten met SteamVR → Inschakelen** | Lets SteamVR start the app. That instance exits when SteamVR shuts down. |
-| **Starten met SteamVR → Uitschakelen** | Removes the SteamVR autostart registration. |
-| **Afsluiten** | Closes the running app. |
+| **Start at Windows sign-in** | Runs at Windows sign-in and stays available until you close it. |
+| **Start with SteamVR → Enable** | Lets SteamVR start the app. That instance exits when SteamVR shuts down. |
+| **Start with SteamVR → Disable** | Removes the SteamVR autostart registration. |
+| **Exit** | Closes the running app. |
 
 For volume controls only during VR sessions, enable SteamVR autostart and leave Windows sign-in unchecked. If the app is already running, a second launch keeps the existing instance. An instance opened manually or at Windows sign-in stays open when SteamVR closes.
 
-If you move the executable, turn each enabled autostart option off and on from its new location to update the saved path. To uninstall, turn off both autostart options, choose **Afsluiten**, then delete the executable.
+If you move the executable, turn each enabled autostart option off and on from its new location to update the saved path. To uninstall, turn off both autostart options, choose **Exit**, then delete the executable.
 
 ## Build from source
 
@@ -47,7 +47,7 @@ The script builds `outputs\OdysseyVolume.exe`. Close the app before rebuilding i
 
 ## Troubleshooting
 
-- **The tray says “Wachten op Odyssey+” (waiting for Odyssey+).** Reconnect the headset's USB plug and check whether the tray status changes. The app retries automatically.
+- **The tray says “Waiting for Odyssey+”.** Reconnect the headset's USB plug and check whether the tray status changes. The app retries automatically.
 - **A button changes the wrong device's volume.** Choose the intended device in Windows sound settings. The app looks up the default multimedia output on each press.
 - **SteamVR autostart fails.** Check that SteamVR is installed through Steam, then enable the option again from the tray.
 
