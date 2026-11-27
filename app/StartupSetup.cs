@@ -56,7 +56,7 @@ internal sealed class StartupSetup : Form
             Dock = DockStyle.Fill,
             SizeMode = PictureBoxSizeMode.Zoom,
             TabStop = false,
-            AccessibleName = "Samsung Odyssey+ VR headset"
+            AccessibleName = "Samsung HMD Odyssey+ headset"
         };
         using (var picture = typeof(StartupSetup).Assembly.GetManifestResourceStream("OdysseyHeadset.png"))
         using (var image = Image.FromStream(picture))

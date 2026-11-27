@@ -1,20 +1,20 @@
 # Odyssey+ Volume Buttons With Oasis Driver
 
-<img src="assets/odyssey-plus.png" alt="Illustration of a Samsung Odyssey+ VR headset" width="210">
+<img src="assets/odyssey-plus.png" alt="Illustration of the Samsung HMD Odyssey+ headset" width="210">
 
-Use the physical volume buttons on a Samsung Odyssey+ to control Windows audio.
+Use the physical volume buttons on a Samsung HMD Odyssey+ to control Windows audio. [Samsung product support](https://www.samsung.com/us/support/computing/hmd/?modelCode=XE800ZBA-HC1US)
 
 This headset still rocks with the Oasis driver. In my setup, the hardware volume buttons stopped working. This little app makes the Odyssey+ buttons control the volume of your default Windows audio output.
 
 ## Compatibility
 
-- The app targets the USB interface of the **Samsung Odyssey+**.
-- Tested on **64-bit Windows 11, version 25H2**, with a Samsung Odyssey+ using Oasis and SteamVR. [Oasis Driver for Windows Mixed Reality](https://store.steampowered.com/app/3824490/Oasis_Driver_for_Windows_Mixed_Reality/)
+- The app targets the USB interface of the **Samsung HMD Odyssey+**.
+- Tested on **64-bit Windows 11, version 25H2**, with the Odyssey+ using Oasis and SteamVR. [Oasis Driver for Windows Mixed Reality](https://store.steampowered.com/app/3824490/Oasis_Driver_for_Windows_Mixed_Reality/)
 - **SteamVR** is optional for volume control.
 
 ## Run the app
 
-1. [Download the Windows ZIP](https://github.com/PeperMarkreel/OdyseyVolumeButtons/releases/latest) and extract `OdysseyVolume.exe`, or [build it from source](#build-from-source).
+1. [Download the Windows ZIP](https://github.com/PeperMarkreel/OdysseyVolumeButtons/releases/latest) and extract `OdysseyVolume.exe`, or [build it from source](#build-from-source).
 2. Put the executable in a folder where you plan to keep it, then double-click it.
 3. Choose a startup mode on the first launch. Connect the headset and try its volume buttons once the app is running. Right-click the speaker icon in the Windows notification area to see the connection or volume status. If the icon is hidden, look under the notification area's up arrow.
 
@@ -52,4 +52,4 @@ The script builds `outputs\OdysseyVolume.exe`. Close the app before rebuilding i
 - **A button changes the wrong device's volume.** Choose the intended device in Windows sound settings. The app looks up the default multimedia output on each press.
 - **SteamVR autostart fails.** Check that SteamVR is installed through Steam, then enable the option again from the tray.
 
-If you're still stuck, [open an issue](https://github.com/PeperMarkreel/OdyseyVolumeButtons/issues/new) with your Windows version, headset model, and the message shown in the tray. For a SteamVR issue, also include your SteamVR version and how the app was started.
+If you're still stuck, [open an issue](https://github.com/PeperMarkreel/OdysseyVolumeButtons/issues/new) with your Windows version, headset model, and the message shown in the tray. For a SteamVR issue, also include your SteamVR version and how the app was started.
